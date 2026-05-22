@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'theme/secure_colors.dart';
+import 'features/auth/data/matrix_auth_service.dart';
+import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/screens/auth_screen.dart';
 
 void main() {
   // Ensure framework bindings are ready before execution
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+
+  // Instantiate the core Matrix authentication engine
+  final matrixAuthService = MatrixAuthService();
+
+  runApp(
+    BlocProvider<AuthBloc>(
+      create: (context) => AuthBloc(matrixAuthService),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
