@@ -31,7 +31,14 @@ class MatrixAuthService {
       'MatrixSecureAuthClient',
       database: database,
     );
+    await _client!.init();
     _isInitialized = true;
+  }
+
+  /// Returns true when a persisted Matrix session is available locally.
+  Future<bool> hasActiveSession() async {
+    await init();
+    return _client!.isLogged();
   }
 
   /// Normalizes the server address format (e.g., matrix.org -> https://matrix.org)

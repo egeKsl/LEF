@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../config/routes/app_routes.dart';
 import '../../../../theme/secure_colors.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/custom_server_text_field.dart';
@@ -83,16 +84,12 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 _nodeStatus = "SECURE LINK ACTIVE // ${state.userId}";
                 _statusColor = SecureColors.cryptoGreen;
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: SecureColors.surfaceDarkSlate,
-                  content: Text(
-                    "LINK ESTABLISHED SUCCESSFUL",
-                    style: TextStyle(color: SecureColors.cryptoGreen, fontFamily: 'Inter'),
-                  ),
-                ),
+
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.chatList,
+                (route) => false,
               );
-              // TODO: Ana ekrana yönlendirme kodunu buraya ekleyebilirsiniz.
             } else if (state is AuthFailure) {
               setState(() {
                 _nodeStatus = "CONNECTION FAILED";
