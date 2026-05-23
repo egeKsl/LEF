@@ -5,10 +5,13 @@ class StatusAppBar extends StatelessWidget {
   final String syncStatus;
   final bool isTorActive;
 
+  final VoidCallback? onSettingsTap;
+
   const StatusAppBar({
     super.key,
     required this.syncStatus,
     this.isTorActive = false,
+    this.onSettingsTap,
   });
 
   /// Total app bar height: status bar (notch/camera) + toolbar content.
@@ -89,44 +92,81 @@ class StatusAppBar extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
-                    decoration: BoxDecoration(
-                      color: SecureColors.surfaceCharcoal,
-                      borderRadius: BorderRadius.circular(4.0),
-                      border: Border.all(
-                        color: isTorActive
-                            ? SecureColors.cryptoGreen
-                            : SecureColors.surfaceDarkSlate,
-                        width: 1.0,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.security,
-                          size: 12.0,
-                          color: isTorActive
-                              ? SecureColors.cryptoGreen
-                              : SecureColors.textSecondary,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10.0,
+                          vertical: 6.0,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          isTorActive ? "TOR: ACTIVE" : "TOR: INACTIVE",
-                          style: TextStyle(
+                        decoration: BoxDecoration(
+                          color: SecureColors.surfaceCharcoal,
+                          borderRadius: BorderRadius.circular(4.0),
+                          border: Border.all(
                             color: isTorActive
                                 ? SecureColors.cryptoGreen
-                                : SecureColors.textSecondary,
-                            fontFamily: 'Inter',
-                            fontSize: 10.0,
-                            height: 1.0,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
+                                : SecureColors.surfaceDarkSlate,
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.security,
+                              size: 12.0,
+                              color: isTorActive
+                                  ? SecureColors.cryptoGreen
+                                  : SecureColors.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              isTorActive ? "TOR: ACTIVE" : "TOR: INACTIVE",
+                              style: TextStyle(
+                                color: isTorActive
+                                    ? SecureColors.cryptoGreen
+                                    : SecureColors.textSecondary,
+                                fontFamily: 'Inter',
+                                fontSize: 10.0,
+                                height: 1.0,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (onSettingsTap != null) ...[
+                        const SizedBox(width: 6),
+                        Material(
+                          color: SecureColors.surfaceCharcoal,
+                          borderRadius: BorderRadius.circular(4.0),
+                          child: InkWell(
+                            onTap: onSettingsTap,
+                            borderRadius: BorderRadius.circular(4.0),
+                            splashColor: SecureColors.surfaceDarkSlate,
+                            child: Container(
+                              width: 32,
+                              height: 28,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4.0),
+                                border: Border.all(
+                                  color: SecureColors.surfaceDarkSlate,
+                                  width: 1.0,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.settings_outlined,
+                                size: 16,
+                                color: SecureColors.textSecondary,
+                              ),
+                            ),
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ],
               ),

@@ -4,6 +4,7 @@ import 'package:matrix/matrix.dart' as matrix;
 import '../../../auth/data/matrix_auth_service.dart';
 import '../../data/mock_chat_data.dart';
 import '../../../../theme/secure_colors.dart';
+import '../../../../config/routes/app_routes.dart';
 import '../../../chat_room/presentation/screens/chat_room_screen.dart';
 import '../widgets/status_app_bar.dart';
 import '../widgets/encrypted_chat_tile.dart';
@@ -167,7 +168,10 @@ class ChatListScreen extends StatelessWidget {
       backgroundColor: SecureColors.background,
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(StatusAppBar.height(context)),
-        child: const StatusAppBar(syncStatus: "CONNECTED"),
+        child: StatusAppBar(
+          syncStatus: "CONNECTED",
+          onSettingsTap: () => Navigator.pushNamed(context, AppRoutes.settings),
+        ),
       ),
       body: SafeArea(
         top: false,
