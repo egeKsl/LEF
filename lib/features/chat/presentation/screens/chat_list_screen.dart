@@ -4,6 +4,7 @@ import 'package:matrix/matrix.dart' as matrix;
 import '../../../auth/data/matrix_auth_service.dart';
 import '../../data/mock_chat_data.dart';
 import '../../../../theme/secure_colors.dart';
+import '../../../chat_room/presentation/screens/chat_room_screen.dart';
 import '../widgets/status_app_bar.dart';
 import '../widgets/encrypted_chat_tile.dart';
 
@@ -19,7 +20,7 @@ class _SecureFabLocation extends FloatingActionButtonLocation {
   const _SecureFabLocation();
 
   static const double _sideMargin = 20.0;
-  static const double _bottomMargin = 10.0;
+  static const double _bottomMargin = 22.0;
 
   @override
   Offset getOffset(ScaffoldPrelayoutGeometry geometry) {
@@ -117,7 +118,16 @@ class ChatListScreen extends StatelessWidget {
     );
   }
 
-  List<EncryptedChatTile> _tilesFromMock() {
+  void _openChatRoom(BuildContext context, {MockChatPreview? mock, matrix.Room? room}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatRoomScreen(mockPreview: mock, room: room),
+      ),
+    );
+  }
+
+  List<EncryptedChatTile> _tilesFromMock(BuildContext context) {
     return mockChatPreviews
         .map(
           (item) => EncryptedChatTile(
@@ -126,13 +136,13 @@ class ChatListScreen extends StatelessWidget {
             timestamp: item.timestamp,
             unreadCount: item.unreadCount,
             isEncrypted: item.isEncrypted,
-            onTap: () {},
+            onTap: () => _openChatRoom(context, mock: item),
           ),
         )
         .toList();
   }
 
-  List<EncryptedChatTile> _tilesFromRooms(List<matrix.Room> rooms) {
+  List<EncryptedChatTile> _tilesFromRooms(BuildContext context, List<matrix.Room> rooms) {
     return rooms
         .map(
           (room) => EncryptedChatTile(
@@ -141,9 +151,7 @@ class ChatListScreen extends StatelessWidget {
             timestamp: _formatTimestamp(room.lastEvent?.originServerTs),
             unreadCount: room.notificationCount,
             isEncrypted: room.encrypted,
-            onTap: () {
-              // TODO: Push target message thread screen route
-            },
+            onTap: () => _openChatRoom(context, room: room),
           ),
         )
         .toList();
@@ -167,7 +175,7 @@ class ChatListScreen extends StatelessWidget {
             ? _buildChatList(
                 bottomInset: bottomInset,
                 fabClearance: fabClearance,
-                tiles: _tilesFromMock(),
+                tiles: _tilesFromMock(context),
               )
             : StreamBuilder<matrix.SyncUpdate>(
                 stream: authService.client.onSync.stream,
@@ -175,7 +183,7 @@ class ChatListScreen extends StatelessWidget {
                   return _buildChatList(
                     bottomInset: bottomInset,
                     fabClearance: fabClearance,
-                    tiles: _tilesFromRooms(authService.client.rooms),
+                    tiles: _tilesFromRooms(context, authService.client.rooms),
                   );
                 },
               ),
