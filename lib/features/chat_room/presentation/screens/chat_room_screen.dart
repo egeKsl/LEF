@@ -6,6 +6,7 @@ import '../../data/mock_chat_room_messages.dart';
 import '../widgets/message_stream.dart';
 import '../widgets/mock_message_stream.dart';
 import '../widgets/secure_input_bar.dart';
+import '../widgets/key_verification_dialog.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final matrix.Room? room;
@@ -131,8 +132,38 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               color: SecureColors.cyberBlue,
               size: 18,
             ),
-            onPressed: () {
-              // TODO: Cryptographic Key fingerprint comparison interface modal trigger
+            onPressed: () async {
+              final remoteId = _useMock ? '@alice:matrix.org' : _roomName;
+              final result = await KeyVerificationDialog.show(
+                context,
+                remoteUserId: remoteId,
+              );
+              if (result != null && mounted) {
+                final isMatch = result == true;
+                final message = isMatch
+                    ? "E2EE_VERIFICATION_MARKED_LOCALLY // SESSION TRUSTED"
+                    : "E2EE_VERIFICATION_MARKED_LOCALLY // SESSION MISMATCH REPORTED";
+                final borderColor = isMatch ? SecureColors.cryptoGreen : SecureColors.panicRed;
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: SecureColors.surfaceCharcoal,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4.0)),
+                      side: BorderSide(color: borderColor, width: 1.0),
+                    ),
+                    content: Text(
+                      message,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        color: SecureColors.textPrimary,
+                        fontSize: 12.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                );
+              }
             },
           ),
         ],

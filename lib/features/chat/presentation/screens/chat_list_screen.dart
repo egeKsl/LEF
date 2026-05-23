@@ -8,6 +8,7 @@ import '../../../../config/routes/app_routes.dart';
 import '../../../chat_room/presentation/screens/chat_room_screen.dart';
 import '../widgets/status_app_bar.dart';
 import '../widgets/encrypted_chat_tile.dart';
+import '../widgets/new_chat_modal.dart';
 
 String _formatTimestamp(DateTime? timestamp) {
   if (timestamp == null) return '--:--';
@@ -41,51 +42,6 @@ class _SecureFabLocation extends FloatingActionButtonLocation {
 
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
-
-  void _showNewChatModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: SecureColors.surfaceCharcoal,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Container(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  "INITIALIZE_NEW_SECURE_LINK",
-                  style: TextStyle(
-                    color: SecureColors.textPrimary,
-                    fontFamily: 'Inter',
-                    fontSize: 14.0,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Interface placeholders can be scaled into direct text entry fields later
-                ListTile(
-                  leading: const Icon(Icons.qr_code_scanner, color: SecureColors.cyberBlue),
-                  title: const Text("Scan Session QR Key", style: TextStyle(color: SecureColors.textPrimary)),
-                  onTap: () => Navigator.pop(context),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.alternate_email, color: SecureColors.cyberBlue),
-                  title: const Text("Direct Matrix ID Handshake", style: TextStyle(color: SecureColors.textPrimary)),
-                  onTap: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildChatList({
     required double bottomInset,
@@ -200,7 +156,7 @@ class ChatListScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4.0),
         ),
-        onPressed: () => _showNewChatModal(context),
+        onPressed: () => NewChatModal.show(context),
         child: const Icon(Icons.add, size: 24.0),
       ),
     );
