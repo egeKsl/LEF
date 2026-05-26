@@ -10,6 +10,10 @@ import '../widgets/status_app_bar.dart';
 import '../widgets/encrypted_chat_tile.dart';
 import '../widgets/new_chat_modal.dart';
 
+// CRITICAL STEP: Switch this toggle to false to route traffic away 
+// from mock data and activate live matrix channel sync.
+const bool kDisableMocksForProduction = false;
+
 String _formatTimestamp(DateTime? timestamp) {
   if (timestamp == null) return '--:--';
   final h = timestamp.hour.toString().padLeft(2, '0');
@@ -17,7 +21,6 @@ String _formatTimestamp(DateTime? timestamp) {
   return '$h:$m';
 }
 
-/// FAB sits just above the system nav bar with equal side/bottom margins.
 class _SecureFabLocation extends FloatingActionButtonLocation {
   const _SecureFabLocation();
 
@@ -31,10 +34,7 @@ class _SecureFabLocation extends FloatingActionButtonLocation {
     final insets = geometry.minViewPadding;
 
     final x = scaffoldSize.width - fabSize.width - _sideMargin;
-    final y = scaffoldSize.height -
-        fabSize.height -
-        insets.bottom -
-        _bottomMargin;
+    final y = scaffoldSize.height - fabSize.height - insets.bottom - _bottomMargin;
 
     return Offset(x, y);
   }
@@ -131,7 +131,7 @@ class ChatListScreen extends StatelessWidget {
       ),
       body: SafeArea(
         top: false,
-        child: kUseMockChatPreview
+        child: kDisableMocksForProduction
             ? _buildChatList(
                 bottomInset: bottomInset,
                 fabClearance: fabClearance,

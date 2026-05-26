@@ -11,9 +11,9 @@ Future<void> main() async {
 
   final matrixAuthService = MatrixAuthService();
   await matrixAuthService.init();
-  final initialRoute = await matrixAuthService.hasActiveSession()
-      ? AppRoutes.chatList
-      : AppRoutes.auth;
+  // Force application to clear session and launch directly into the identity login screen
+  await matrixAuthService.logout();
+  final initialRoute = AppRoutes.auth;
 
   runApp(
     MultiProvider(

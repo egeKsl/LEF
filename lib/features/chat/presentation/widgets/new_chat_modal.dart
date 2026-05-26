@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
+import 'package:matrix/matrix.dart' as matrix;
 import '../../../../theme/secure_colors.dart';
+import '../../../auth/data/matrix_auth_service.dart';
 import '../../../auth/presentation/widgets/auth_text_field.dart';
 
 class NewChatModal extends StatefulWidget {
@@ -15,9 +18,7 @@ class NewChatModal extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
       ),
-      builder: (context) {
-        return const NewChatModal();
-      },
+      builder: (context) => const NewChatModal(),
     );
   }
 
@@ -32,6 +33,7 @@ class _NewChatModalState extends State<NewChatModal> {
   String? _errorMessage;
   String? _detectedId;
   bool _isValidFormat = false;
+  bool _isProcessingHandshake = false;
 
   @override
   void initState() {
@@ -77,17 +79,11 @@ class _NewChatModalState extends State<NewChatModal> {
       if (rawValue != null && rawValue.isNotEmpty) {
         String parsedId = rawValue.trim();
 
-        // Parse matrix:u/ format if present
         if (parsedId.startsWith('matrix:u/')) {
           final stripped = parsedId.replaceFirst('matrix:u/', '');
-          if (!stripped.startsWith('@')) {
-            parsedId = '@$stripped';
-          } else {
-            parsedId = stripped;
-          }
+          parsedId = !stripped.startsWith('@') ? '@$stripped' : stripped;
         }
 
-        // Simple MXID RegExp: @username:domain
         final regExp = RegExp(r'^@[a-zA-Z0-9_\-\.\=\/]+:[a-zA-Z0-9_\-\.]+\.[a-zA-Z]+');
         if (regExp.hasMatch(parsedId) || parsedId.startsWith('@')) {
           setState(() {
@@ -101,6 +97,48 @@ class _NewChatModalState extends State<NewChatModal> {
             _isValidFormat = false;
           });
         }
+      }
+    }
+  }
+
+  Future<void> _executeSecureHandshake(String remoteMatrixId) async {
+    setState(() => _isProcessingHandshake = true);
+    final authService = Provider.of<MatrixAuthService>(context, listen: false);
+
+    try {
+      // Execute the live room creation method calling standard Matrix endpoints.
+      // This instantiates a trusted, private DM channel and auto-invites Client B.
+      await authService.client.createRoom(
+        invite: [remoteMatrixId],
+        isDirect: true,
+        preset: matrix.CreateRoomPreset.trustedPrivateChat,
+        visibility: matrix.Visibility.private,
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: SecureColors.surfaceCharcoal,
+            content: Text(
+              "SECURE LINK OPENED // CHANNEL SYNCHRONIZED",
+              style: TextStyle(color: SecureColors.cryptoGreen, fontFamily: 'Inter'),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isProcessingHandshake = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF1A0505),
+            content: Text(
+              "HANDSHAKE FAILED // ${e.toString()}",
+              style: const TextStyle(color: SecureColors.panicRed, fontFamily: 'Inter'),
+            ),
+          ),
+        );
       }
     }
   }
@@ -146,11 +184,7 @@ class _NewChatModalState extends State<NewChatModal> {
                       Text(
                         _errorMessage ?? "Allow camera access inside system settings.",
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: SecureColors.textSecondary,
-                          fontSize: 11.0,
-                          height: 1.4,
-                        ),
+                        style: const TextStyle(color: SecureColors.textSecondary, fontSize: 11.0, height: 1.4),
                       ),
                     ],
                   ),
@@ -161,70 +195,23 @@ class _NewChatModalState extends State<NewChatModal> {
                 controller: _scannerController,
                 onDetect: _onDetect,
               ),
-
-            // Tactical viewfinder overlays when permission is granted
             if (_hasPermission == true) ...[
-              // Top-left corner
               Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: SecureColors.cyberBlue, width: 2.0),
-                      left: BorderSide(color: SecureColors.cyberBlue, width: 2.0),
-                    ),
-                  ),
-                ),
+                top: 12, left: 12,
+                child: Container(width: 16, height: 16, decoration: const BoxDecoration(border: Border(top: BorderSide(color: SecureColors.cyberBlue, width: 2.0), left: BorderSide(color: SecureColors.cyberBlue, width: 2.0)))),
               ),
-              // Top-right corner
               Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: SecureColors.cyberBlue, width: 2.0),
-                      right: BorderSide(color: SecureColors.cyberBlue, width: 2.0),
-                    ),
-                  ),
-                ),
+                top: 12, right: 12,
+                child: Container(width: 16, height: 16, decoration: const BoxDecoration(border: Border(top: BorderSide(color: SecureColors.cyberBlue, width: 2.0), right: BorderSide(color: SecureColors.cyberBlue, width: 2.0)))),
               ),
-              // Bottom-left corner
               Positioned(
-                bottom: 12,
-                left: 12,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: SecureColors.cyberBlue, width: 2.0),
-                      left: BorderSide(color: SecureColors.cyberBlue, width: 2.0),
-                    ),
-                  ),
-                ),
+                bottom: 12, left: 12,
+                child: Container(width: 16, height: 16, decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: SecureColors.cyberBlue, width: 2.0), left: BorderSide(color: SecureColors.cyberBlue, width: 2.0)))),
               ),
-              // Bottom-right corner
               Positioned(
-                bottom: 12,
-                right: 12,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: SecureColors.cyberBlue, width: 2.0),
-                      right: BorderSide(color: SecureColors.cyberBlue, width: 2.0),
-                    ),
-                  ),
-                ),
+                bottom: 12, right: 12,
+                child: Container(width: 16, height: 16, decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: SecureColors.cyberBlue, width: 2.0), right: BorderSide(color: SecureColors.cyberBlue, width: 2.0)))),
               ),
-              // Central neon scanner animation line
               const _ScanLineAnimation(),
             ],
           ],
@@ -236,7 +223,7 @@ class _NewChatModalState extends State<NewChatModal> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final isButtonEnabled = _matrixIdController.text.trim().isNotEmpty;
+    final isButtonEnabled = _matrixIdController.text.trim().isNotEmpty && !_isProcessingHandshake;
 
     return SafeArea(
       child: Padding(
@@ -250,24 +237,12 @@ class _NewChatModalState extends State<NewChatModal> {
               children: [
                 const Text(
                   "INITIALIZE_NEW_SECURE_LINK",
-                  style: TextStyle(
-                    color: SecureColors.textPrimary,
-                    fontFamily: 'Inter',
-                    fontSize: 14.0,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                  ),
+                  style: TextStyle(color: SecureColors.textPrimary, fontFamily: 'Inter', fontSize: 14.0, fontWeight: FontWeight.bold, letterSpacing: 1.0),
                 ),
                 const SizedBox(height: 20),
                 const Text(
                   "SECURE_QR_SCANNER",
-                  style: TextStyle(
-                    color: SecureColors.textSecondary,
-                    fontFamily: 'Inter',
-                    fontSize: 10.0,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
+                  style: TextStyle(color: SecureColors.textSecondary, fontFamily: 'Inter', fontSize: 10.0, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 8),
                 _buildViewfinder(),
@@ -276,34 +251,18 @@ class _NewChatModalState extends State<NewChatModal> {
                   Container(
                     padding: const EdgeInsets.all(10.0),
                     decoration: BoxDecoration(
-                      color: _isValidFormat
-                          ? SecureColors.cryptoGreen.withOpacity(0.08)
-                          : SecureColors.panicRed.withOpacity(0.08),
+                      color: _isValidFormat ? SecureColors.cryptoGreen.withOpacity(0.08) : SecureColors.panicRed.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(4.0),
-                      border: Border.all(
-                        color: _isValidFormat ? SecureColors.cryptoGreen : SecureColors.panicRed,
-                        width: 1.0,
-                      ),
+                      border: Border.all(color: _isValidFormat ? SecureColors.cryptoGreen : SecureColors.panicRed, width: 1.0),
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          _isValidFormat ? Icons.check_circle_outline : Icons.error_outline,
-                          color: _isValidFormat ? SecureColors.cryptoGreen : SecureColors.panicRed,
-                          size: 16,
-                        ),
+                        Icon(_isValidFormat ? Icons.check_circle_outline : Icons.error_outline, color: _isValidFormat ? SecureColors.cryptoGreen : SecureColors.panicRed, size: 16),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            _isValidFormat
-                                ? "QR_RESOLVED: $_detectedId"
-                                : "INVALID_MATRIX_ID_FORMAT: $_detectedId",
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11.0,
-                              fontWeight: FontWeight.bold,
-                              color: _isValidFormat ? SecureColors.cryptoGreen : SecureColors.panicRed,
-                            ),
+                            _isValidFormat ? "QR_RESOLVED: $_detectedId" : "INVALID_MATRIX_ID_FORMAT: $_detectedId",
+                            style: TextStyle(fontFamily: 'Inter', fontSize: 11.0, fontWeight: FontWeight.bold, color: _isValidFormat ? SecureColors.cryptoGreen : SecureColors.panicRed),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -315,13 +274,7 @@ class _NewChatModalState extends State<NewChatModal> {
                 const SizedBox(height: 20),
                 const Text(
                   "MANUAL_MATRIX_ID_HANDSHAKE",
-                  style: TextStyle(
-                    color: SecureColors.textSecondary,
-                    fontFamily: 'Inter',
-                    fontSize: 10.0,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
+                  style: TextStyle(color: SecureColors.textSecondary, fontFamily: 'Inter', fontSize: 10.0, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 6),
                 AuthTextField(
@@ -336,44 +289,25 @@ class _NewChatModalState extends State<NewChatModal> {
                     disabledBackgroundColor: SecureColors.surfaceDarkSlate,
                     disabledForegroundColor: SecureColors.textSecondary,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4.0),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.0)),
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                   ),
                   onPressed: isButtonEnabled
-                      ? () {
-                          final matrixId = _matrixIdController.text.trim();
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: SecureColors.surfaceCharcoal,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(4.0)),
-                                side: BorderSide(color: SecureColors.cyberBlue, width: 1.0),
-                              ),
-                              content: Text(
-                                "LINK_REQUEST_QUEUED // $matrixId",
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
-                                  color: SecureColors.textPrimary,
-                                  fontSize: 12.0,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          );
-                        }
+                      ? () => _executeSecureHandshake(_matrixIdController.text.trim())
                       : null,
-                  child: const Text(
-                    "INITIATE_SECURE_LINK",
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.0,
-                      fontSize: 13.0,
-                    ),
-                  ),
+                  child: _isProcessingHandshake
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.0,
+                            valueColor: AlwaysStoppedAnimation<Color>(SecureColors.background),
+                          ),
+                        )
+                      : const Text(
+                          "INITIATE_SECURE_LINK",
+                          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w900, letterSpacing: 1.0, fontSize: 13.0),
+                        ),
                 ),
               ],
             ),
@@ -422,13 +356,7 @@ class _ScanLineAnimationState extends State<_ScanLineAnimation> with SingleTicke
             height: 2,
             decoration: BoxDecoration(
               color: SecureColors.cyberBlue.withOpacity(0.8),
-              boxShadow: const [
-                BoxShadow(
-                  color: SecureColors.cyberBlue,
-                  blurRadius: 4.0,
-                  spreadRadius: 1.0,
-                ),
-              ],
+              boxShadow: const [BoxShadow(color: SecureColors.cyberBlue, blurRadius: 4.0, spreadRadius: 1.0)],
             ),
           ),
         );

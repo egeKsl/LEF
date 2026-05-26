@@ -33,6 +33,12 @@ class MatrixAuthService {
     );
     await _client!.init();
     _isInitialized = true;
+
+    // CRITICAL: Automatically kickstart background synchronization loop 
+    // if an active secure token is already stored in the database.
+    if (_client!.isLogged()) {
+      _client!.backgroundSync = true;
+    }
   }
 
   /// Returns true when a persisted Matrix session is available locally.
@@ -41,11 +47,14 @@ class MatrixAuthService {
     return _client!.isLogged();
   }
 
-  /// Normalizes the server address format (e.g., matrix.org -> https://matrix.org)
   Uri _normalizeUrl(String homeserver) {
     String url = homeserver.trim();
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      url = 'https://$url';
+      if (url.startsWith('localhost') || url.startsWith('127.0.0.1') || url.startsWith('10.0.2.2') || url.startsWith('192.168.')) {
+        url = 'http://$url';
+      } else {
+        url = 'https://$url';
+      }
     }
     return Uri.parse(url);
   }
@@ -61,13 +70,14 @@ class MatrixAuthService {
 
     await _client!.checkHomeserver(homeserverUri);
 
-    // FIX: Changed AuthenticationTypes.password to 'm.login.dummy' to match 
-    // the local Synapse non-verification registration requirements.
     final loginResponse = await _client!.register(
       username: username,
       password: password,
       auth: AuthenticationData(type: 'm.login.dummy'),
     );
+
+    // Start streaming incoming network payloads immediately following successful registration.
+    _client!.backgroundSync = true;
 
     return loginResponse.userId ?? username;
   }
@@ -88,6 +98,9 @@ class MatrixAuthService {
       identifier: AuthenticationUserIdentifier(user: username),
       password: password,
     );
+
+    // Start streaming incoming network payloads immediately following successful verification.
+    _client!.backgroundSync = true;
 
     return loginResponse.userId ?? username;
   }
