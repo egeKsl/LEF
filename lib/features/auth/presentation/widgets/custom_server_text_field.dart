@@ -35,7 +35,7 @@ class CustomServerTextField extends StatelessWidget {
             color: SecureColors.textSecondary,
             size: 18.0,
           ),
-          hintText: 'matrix.org (Default Node)',
+          hintText: 'wss://relay.example.com',
           hintStyle: const TextStyle(
             color: SecureColors.textSecondary,
             fontSize: 14.0,

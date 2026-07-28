@@ -1,30 +1,33 @@
-// This is a basic Flutter widget test.
+// test/widget_test.dart
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Smoke test: app starts, AuthScreen renders.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:messaging/main.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:messaging/core/identity/identity_service.dart';
+import 'package:messaging/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:messaging/features/auth/presentation/screens/auth_screen.dart';
+import 'package:messaging/theme/secure_colors.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp(initialRoute: '/auth'));
+  testWidgets('AuthScreen renders without crashing', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: SecureColors.background,
+        ),
+        home: BlocProvider(
+          create: (_) => AuthBloc(IdentityService()),
+          child: const AuthScreen(),
+        ),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Should show identity setup header
+    expect(find.textContaining('IDENTITY'), findsWidgets);
   });
 }

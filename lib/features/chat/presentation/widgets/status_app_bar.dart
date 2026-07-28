@@ -9,7 +9,7 @@ class StatusAppBar extends StatelessWidget {
 
   const StatusAppBar({
     super.key,
-    required this.syncStatus,
+    this.syncStatus = "P2P MESH ACTIVE",
     this.isTorActive = false,
     this.onSettingsTap,
   });
@@ -51,7 +51,7 @@ class StatusAppBar extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Text(
-                          "MATRIX PROTOCOL NODE",
+                          "DECENTRALIZED NODE",
                           style: TextStyle(
                             color: SecureColors.textSecondary,
                             fontSize: 9.0,

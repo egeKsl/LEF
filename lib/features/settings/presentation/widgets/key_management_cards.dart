@@ -26,7 +26,7 @@ class KeyManagementCards extends StatelessWidget {
           const Row(
             children: [
               Icon(Icons.vpn_key_outlined, size: 16, color: SecureColors.cyberBlue),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 "CRYPTOGRAPHIC_KEY_STORE",
                 style: TextStyle(

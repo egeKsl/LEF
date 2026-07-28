@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../theme/secure_colors.dart';
 
 class SecureInputBar extends StatefulWidget {
-  final Function(String message, int ephemeralExpirySeconds) onMessageSubmitted;
+  final Future<bool> Function(String message, int ephemeralExpirySeconds) onMessageSubmitted;
   final VoidCallback onAttachmentTriggered;
 
   const SecureInputBar({
@@ -29,13 +29,18 @@ class _SecureInputBarState extends State<SecureInputBar> {
     });
   }
 
-  void _handleSend() {
-    if (_inputController.text.trim().isEmpty) return;
-    widget.onMessageSubmitted(
-      _inputController.text.trim(),
+  Future<void> _handleSend() async {
+    final message = _inputController.text.trim();
+    if (message.isEmpty) return;
+
+    final wasSent = await widget.onMessageSubmitted(
+      message,
       _ephemeralIntervals[_currentTimerIndex],
     );
-    _inputController.clear();
+
+    if (wasSent) {
+      _inputController.clear();
+    }
   }
 
   @override

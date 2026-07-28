@@ -65,8 +65,8 @@ class TorSwitchTile extends StatelessWidget {
           const SizedBox(width: 16),
           CupertinoSwitch(
             value: isActive,
-            activeColor: SecureColors.cryptoGreen,
-            trackColor: SecureColors.surfaceDarkSlate,
+            activeTrackColor: SecureColors.cryptoGreen,
+            inactiveTrackColor: SecureColors.surfaceDarkSlate,
             onChanged: onToggle,
           ),
         ],

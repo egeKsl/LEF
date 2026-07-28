@@ -1,93 +1,116 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../data/matrix_auth_service.dart';
+// lib/features/auth/presentation/bloc/auth_bloc.dart
+//
+// LAYER: features/auth/presentation
+// RESPONSIBILITY: BLoC managing local identity creation and loading.
+//
+// No Matrix. No network. Identity is generated locally using Ed25519 keypairs.
 
-// --- Events ---
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/identity/identity_service.dart';
+import '../../../../core/identity/local_identity.dart';
+
+// ─── Events ──────────────────────────────────────────────────────────────────
+
 abstract class AuthEvent {}
 
-class LoginRequested extends AuthEvent {
-  final String node;
-  final String username;
-  final String password;
-  LoginRequested({required this.node, required this.username, required this.password});
+/// Check whether a local identity already exists on this device.
+class CheckLocalIdentityRequested extends AuthEvent {}
+
+/// Generate a fresh Ed25519 keypair with the given display name.
+class GenerateIdentityRequested extends AuthEvent {
+  final String displayName;
+  GenerateIdentityRequested({required this.displayName});
 }
 
-class RegisterRequested extends AuthEvent {
-  final String node;
-  final String username;
-  final String password;
-  RegisterRequested({required this.node, required this.username, required this.password});
+/// Import an identity from a previously exported JSON blob.
+class ImportIdentityRequested extends AuthEvent {
+  final String blob;
+  ImportIdentityRequested({required this.blob});
 }
 
-class LogoutRequested extends AuthEvent {}
+/// Permanently delete the local identity.
+class PurgeIdentityRequested extends AuthEvent {}
 
-// --- States ---
+// ─── States ──────────────────────────────────────────────────────────────────
+
 abstract class AuthState {}
 
 class AuthInitial extends AuthState {}
+
 class AuthLoading extends AuthState {}
-class AuthSuccess extends AuthState {
-  final String userId;
-  AuthSuccess(this.userId);
+
+class AuthReady extends AuthState {
+  final LocalIdentity identity;
+  AuthReady(this.identity);
 }
+
+/// No identity exists yet — user must generate or import one.
+class AuthNoIdentity extends AuthState {}
+
 class AuthFailure extends AuthState {
   final String message;
   AuthFailure(this.message);
 }
-class Unauthenticated extends AuthState {}
 
-// --- Bloc Implementation ---
+// ─── BLoC ────────────────────────────────────────────────────────────────────
+
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final MatrixAuthService _authService;
+  final IdentityService _identityService;
 
-  AuthBloc(this._authService) : super(AuthInitial()) {
-    
-    on<LoginRequested>((event, emit) async {
-      emit(AuthLoading());
-      try {
-        final userId = await _authService.login(
-          homeserver: event.node,
-          username: event.username,
-          password: event.password,
-        );
-        emit(AuthSuccess(userId));
-      } catch (e) {
-        emit(AuthFailure(_cleanErrorMessage(e.toString())));
-      }
-    });
-
-    on<RegisterRequested>((event, emit) async {
-      emit(AuthLoading());
-      try {
-        final userId = await _authService.register(
-          homeserver: event.node,
-          username: event.username,
-          password: event.password,
-        );
-        emit(AuthSuccess(userId));
-      } catch (e) {
-        emit(AuthFailure(_cleanErrorMessage(e.toString())));
-      }
-    });
-
-    on<LogoutRequested>((event, emit) async {
-      emit(AuthLoading());
-      try {
-        await _authService.logout();
-        emit(Unauthenticated());
-      } catch (e) {
-        emit(AuthFailure(e.toString()));
-      }
-    });
+  AuthBloc(this._identityService) : super(AuthInitial()) {
+    on<CheckLocalIdentityRequested>(_onCheck);
+    on<GenerateIdentityRequested>(_onGenerate);
+    on<ImportIdentityRequested>(_onImport);
+    on<PurgeIdentityRequested>(_onPurge);
   }
 
-  String _cleanErrorMessage(String rawError) {
-    if (rawError.contains("M_USER_IN_USE")) {
-      return "ERROR: IDENTITY_ALREADY_EXISTS // Selected username is already taken.";
-    } else if (rawError.contains("M_FORBIDDEN")) {
-      return "ERROR: INVALID_CREDENTIALS // Invalid credentials.";
-    } else if (rawError.contains("SocketException")) {
-      return "ERROR: NET_NODE_UNREACHABLE // Unable to connect to the server.";
+  Future<void> _onCheck(
+    CheckLocalIdentityRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    final identity = await _identityService.loadOrNull();
+    if (identity != null) {
+      emit(AuthReady(identity));
+    } else {
+      emit(AuthNoIdentity());
     }
-    return "ERROR: SECURE_LINK_FAILED // $rawError";
+  }
+
+  Future<void> _onGenerate(
+    GenerateIdentityRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final identity = await _identityService.generate(
+        displayName: event.displayName.trim(),
+      );
+      emit(AuthReady(identity));
+    } catch (e) {
+      emit(AuthFailure('Identity generation failed: $e'));
+    }
+  }
+
+  Future<void> _onImport(
+    ImportIdentityRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    final identity = await _identityService.importFromBlob(event.blob);
+    if (identity != null) {
+      emit(AuthReady(identity));
+    } else {
+      emit(AuthFailure('Invalid identity blob — could not import.'));
+    }
+  }
+
+  Future<void> _onPurge(
+    PurgeIdentityRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    await _identityService.purge();
+    emit(AuthNoIdentity());
   }
 }

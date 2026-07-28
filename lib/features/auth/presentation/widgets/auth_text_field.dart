@@ -6,6 +6,7 @@ class AuthTextField extends StatelessWidget {
   final String hintText;
   final bool isPassword;
   final TextInputType keyboardType;
+  final int? maxLines;
 
   const AuthTextField({
     super.key,
@@ -13,6 +14,7 @@ class AuthTextField extends StatelessWidget {
     required this.hintText,
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
+    this.maxLines = 1,
   });
 
   @override
@@ -31,6 +33,7 @@ class AuthTextField extends StatelessWidget {
         controller: controller,
         obscureText: isPassword,
         keyboardType: keyboardType,
+        maxLines: isPassword ? 1 : maxLines,
         style: const TextStyle(
           color: SecureColors.textPrimary,
           fontFamily: 'Inter',
